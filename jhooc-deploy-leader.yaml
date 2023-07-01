@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: partition-restapi
+  labels:
+    app: partition-restapi
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: partition-restapi
+  template:
+    metadata:
+      labels:
+        app: partition-restapi
+    spec:
+      containers:
+        - name: partition-restapi
+          image: vaishnaviushetty/partition-restapi-docker:latest
+          ports:
+            - containerPort: 8080
+              name: www
+          volumeMounts:
+            - name: www-persistent-storage
+              mountPath: /mnt/data
+          env:
+            - name: LEADER_ELECTION
+              value: "partition-restapi"
+        - name: etcd
+          image: quay.io/coreos/etcd:v3.5.0
+          command:
+            - etcd
+            - --name=my-etcd-1
+            - --listen-client-urls=http://127.0.0.1:2379
+            - --advertise-client-urls=http://127.0.0.1:2379
+            - --initial-advertise-peer-urls=http://127.0.0.1:2380
+            - --listen-peer-urls=http://127.0.0.1:2380
+            - --initial-cluster=my-etcd-1=http://127.0.0.1:2380
+            - --initial-cluster-state=new
+            - --data-dir=/mnt/data/etcd-data
+          ports:
+            - containerPort: 2379
+              name: client
+            - containerPort: 2380
+              name: peer
+          volumeMounts:
+            - name: etcd-data
+              mountPath: /mnt/data/etcd-data
+        - name: leader-elector
+          image: gcr.io/google_containers/leader-elector:0.4
+          command: ["/bin/sh", "-c", "sleep 360 && /usr/local/bin/leader-elector -config=/etc/config/leader-election-config.yaml -id=$(hostname) -election=partition-restapi --enable-leader-inject --v=2"]
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: config
+              mountPath: /etc/config
+              readOnly: true
+      volumes:
+        - name: www-persistent-storage
+          persistentVolumeClaim:
+            claimName: jhooc-pvc
+        - name: etcd-data
+          persistentVolumeClaim:
+            claimName: etcd-data
+        - name: config
+          configMap:
+            name: leader-election-config
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: partition-restapi
+spec:
+  selector:
+    app: partition-restapi
+  ports:
+    - protocol: "TCP"
+      port: 8080
+      targetPort: 8080
+      nodePort: 30008
+  type: NodePort

@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Endpoints
+metadata:
+  creationTimestamp: "2023-05-10T14:21:58Z"
+  name: partition-restapi
+  namespace: default
+  resourceVersion: "84868"
+  uid: 0ca08942-e709-4282-8cb2-41b8f2e47686
+subsets:
+  - notReadyAddresses:
+      - ip: 10.244.0.170
+        nodeName: minikube
+        targetRef:
+          kind: Pod
+          name: partition-restapi-77c66685b8-ms5dp
+          namespace: default
+          uid: bc77454a-05b4-4742-8a23-e6fa833d0683
+      - ip: 10.244.0.171
+        nodeName: minikube
+        targetRef:
+          kind: Pod
+          name: partition-restapi-77c66685b8-xv7sv
+          namespace: default
+          uid: 01f3b265-e700-42c0-82bc-25472623036a
+      - ip: 10.244.0.172
+        nodeName: minikube
+        targetRef:
+          kind: Pod
+          name: partition-restapi-77c66685b8-6l8mr
+          namespace: default
+          uid: 36f3fc2c-98a6-45f5-9b88-4b0906977c03
+    ports:
+      - port: 8080
+        protocol: TCP

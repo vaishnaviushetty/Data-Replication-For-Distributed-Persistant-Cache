@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: leader-election-config
+data:
+  leader-election-config.yaml: |
+    kind: LeaderElectionConfig
+    apiVersion: leader-election.k8s.io/v1
+    lockObjectNamespace: default
+    lockObjectName: partition-restapi-leader-election
+    leaseDuration: 35s
+    renewDeadline: 20s
+    retryPeriod: 10s
+    leaderElect: true
